@@ -1,0 +1,7 @@
+No NVM : https://nodejs.org/fr/blog/release/v16.14.2
+MongoDB compass : 
+https://www.mongodb.com/try/download/compass
+MongoDB Base de donne:
+https://www.mongodb.com/try/download/community
+Postman : 
+https://.postman.com/downloads/
