@@ -4,10 +4,10 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-
+require("dotenv").config();
 const {connectToMongoDb} = require("./config/db");
 
-require("dotenv").config();
+
 
 const http = require('http');// 1)protocole http
 
@@ -41,12 +41,12 @@ app.use(function(err, req, res, next) {
 
   // render the error page
   res.status(err.status || 500);
-  res.render('error');
+  res.json('error');
 });
 
 const server = http.createServer(app);//2)
-server.listen(process.env.port,()=>{
-  connectToMongoDb(),
+server.listen(process.env.PORT,()=>{
+  connectToMongoDb();
 
   console.log('app is running on port 5000');
 
