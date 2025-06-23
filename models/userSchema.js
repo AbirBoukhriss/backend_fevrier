@@ -28,6 +28,7 @@ const userSchema = new mongoose.Schema({
     enum: ["admin", "client", "Freelancer"]
   },
   user_image: { type: String, required: false, default: "client.png" },
+  age: { type: Number },
   count: { type: Number, default: 0 },
   etat: { type: Boolean, default: false }
 }, {
