@@ -3,20 +3,35 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-
 require("dotenv").config();
-const {connectToMongoDb} = require("./config/db");
-
-
-
-const http = require('http');// 1)protocole http
+const { connectToMongoDb } = require("./config/db");
+const http = require('http');
 
 var indexRouter = require('./routes/indexRouter');
 var usersRouter = require('./routes/usersRouter');
 var osRouter = require('./routes/osRouter');
+const clientRoutes = require("./routes/clientRoutes");
+
+// Importation de toutes les routes des entités
+const notificationRoutes = require("./routes/notificationRouter");
+const experienceRoutes = require("./routes/experienceRouter");
+const formationRoutes = require("./routes/formationRouter");
+const certificationRoutes = require("./routes/certificationRouter");
+const projetRoutes = require("./routes/projetRouter");
+const competenceRoutes = require("./routes/competenceRouter");
+const specialiteRoutes = require("./routes/specialiteRouter");
+const categorieTaskRoutes = require("./routes/categorieTaskRouter");
+const subscriptionRoutes = require("./routes/subscriptionRouter");
+const commentRoutes = require("./routes/commentRouter");
+const freelancerRoutes = require("./routes/freelancerRoutes");
+const messageRoutes = require("./routes/messageRoutes");
+const noteRoutes = require("./routes/noteRoutes");
+const taskRoutes = require("./routes/taskRoutes");
+const roleRoutes = require("./routes/roleRouter");
+
+
+
 var app = express();
-
-
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -24,30 +39,47 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Routes principales
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/os', osRouter);
+app.use("/clients", clientRoutes);
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
+
+// Ajout des routes personnalisées
+app.use("/notifications", notificationRoutes);
+app.use("/task", taskRoutes);
+app.use("/experiences", experienceRoutes);
+app.use("/formations", formationRoutes);
+app.use("/certifications", certificationRoutes);
+app.use("/projets", projetRoutes);
+app.use("/competences", competenceRoutes);
+app.use("/specialites", specialiteRoutes);
+app.use("/categorie-tasks", categorieTaskRoutes);
+app.use("/subscriptions", subscriptionRoutes);
+app.use("/comments", commentRoutes);
+app.use("/freelancer", freelancerRoutes);
+app.use("/message", messageRoutes);
+app.use("/roles", roleRoutes);
+app.use("/note", noteRoutes);
+console.log("Comment routes loaded");
+
+// Catch 404 and forward to error handler
+app.use(function (req, res, next) {
   next(createError(404));
 });
 
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
+// Error handler
+app.use(function (err, req, res, next) {
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-  // render the error page
   res.status(err.status || 500);
-  res.json('error');
+  res.json({ error: err.message });
 });
 
-const server = http.createServer(app);//2)
-server.listen(process.env.PORT,()=>{
+// Démarrage du serveur HTTP
+const server = http.createServer(app);
+server.listen(process.env.PORT || 5000, () => {
   connectToMongoDb();
-
-  console.log('app is running on port 5000');
-
+  console.log(`App is running on port ${process.env.PORT || 5000}`);
 });
