@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Task = require("../models/taskSchema");
 
 exports.addTask = async (req, res) => {
@@ -53,7 +54,8 @@ exports.deleteTask = async (req, res) => {
 
 exports.getTasksByFreelancer = async (req, res) => {
   try {
-    const tasks = await Task.find({ freelancerId: req.params.freelancerId });
+    const freelancerId = new mongoose.Types.ObjectId(req.params.freelancerId);
+    const tasks = await Task.find({ freelancerId });
     res.status(200).json(tasks);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -62,7 +64,8 @@ exports.getTasksByFreelancer = async (req, res) => {
 
 exports.getTasksByClient = async (req, res) => {
   try {
-    const tasks = await Task.find({ clientId: req.params.clientId });
+    const clientId = new mongoose.Types.ObjectId(req.params.clientId);
+    const tasks = await Task.find({ clientId });
     res.status(200).json(tasks);
   } catch (error) {
     res.status(500).json({ message: error.message });

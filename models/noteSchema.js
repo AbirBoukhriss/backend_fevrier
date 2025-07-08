@@ -14,15 +14,13 @@ const noteSchema = new mongoose.Schema({
   },
   freelancer: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Freelancer",
+    ref: "Freelance", 
     required: true
   },
   date: {
     type: Date,
     default: Date.now
-  },
-   freelancer: { type: mongoose.Schema.Types.ObjectId, ref: "Freelance" },
-   client: { type: mongoose.Schema.Types.ObjectId, ref: "Client" }
+  }
 });
 
 module.exports = mongoose.model("Note", noteSchema);

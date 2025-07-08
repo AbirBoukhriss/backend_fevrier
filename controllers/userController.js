@@ -1,4 +1,11 @@
 const userModel = require('../models/userSchema');
+const jwt = require('jsonwebtoken');
+
+const maxTime = 24 *60 * 60 //24H
+//const maxTime = 1 * 60 //1min
+const createToken = (id) => {
+    return jwt.sign({id},'net secret pfe', {expiresIn: maxTime })
+}
 
 module.exports.addUserClient = async (req,res) => {
     try {
@@ -176,3 +183,23 @@ module.exports.searchUserByUsername = async (req, res) => {
             res.status(500).json({message: error.message});
         }
     }
+    module.exports.login= async (req,res) => {
+    try {
+        const { email , password } = req.body;
+        const user = await userModel.login(email, password)
+        const token = createToken(user._id)
+        res.cookie("jwt_token_9antra", token, {httpOnly:false,maxAge:maxTime * 1000})
+        res.status(200).json({user})
+    } catch (error) {
+        res.status(500).json({message: error.message});
+    }
+}
+module.exports.logout= async (req,res) => {
+    try {
+  
+        res.cookie("jwt_token_9antra", "", {httpOnly:false,maxAge:1})
+        res.status(200).json("logged")
+    } catch (error) {
+        res.status(500).json({message: error.message});
+    }
+}

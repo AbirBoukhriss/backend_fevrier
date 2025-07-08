@@ -1,7 +1,8 @@
 const router = require("express").Router();
 const ctrl = require("../controllers/categorieTaskController");
 
-router.post("/addCTask", ctrl.addCategorieTask);
-router.get("/allCTask", ctrl.getAllCategorieTasks);
+router.post("/addCategorie", ctrl.addCategorieTask);
+router.get("/allCategories", ctrl.getAllCategorieTasks);
+router.get("/:id", ctrl.getCategorieTaskById);
 
 module.exports = router;

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require("bcrypt");
 
+// Définition du schéma
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -23,37 +24,57 @@ const userSchema = new mongoose.Schema({
       "Le mot de passe doit contenir au moins 8 caractères, une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial.",
     ],
   },
-
-  // Liens vers d'autres tables
-  messages:[{type: mongoose.Schema.Types.ObjectId, ref: "Message" }], 
-  client: { type: mongoose.Schema.Types.ObjectId, ref: "Client" },       // One-to-One
-  freelance: { type: mongoose.Schema.Types.ObjectId, ref: "Freelance" }, // One-to-One
-  role: { type: mongoose.Schema.Types.ObjectId, ref: "Role" },           // Many-to-One
-
+  role: {
+    type: String,
+    enum: ["admin", "client", "freelancer"],
+  },
+  messages: [{ type: mongoose.Schema.Types.ObjectId, ref: "Message" }],
+  client: { type: mongoose.Schema.Types.ObjectId, ref: "Client" },
+  freelance: { type: mongoose.Schema.Types.ObjectId, ref: "Freelance" },
   user_image: { type: String, default: "client.png" },
   age: { type: Number },
   count: { type: Number, default: 0 },
-  etat: { type: Boolean, default: false }
-
+  etat: Boolean,
+  ban: Boolean,
 }, {
   timestamps: true
 });
 
-// Hashage du mot de passe avant save
+// Middleware : hash du mot de passe
 userSchema.pre("save", async function (next) {
   try {
     const salt = await bcrypt.genSalt();
+    const user = this;
     this.password = await bcrypt.hash(this.password, salt);
-    this.count += 1;
+    user.etat = false;
+    user.ban = true;
+    user.count = user.count + 1;
     next();
   } catch (error) {
     next(error);
   }
 });
 
-// Log après enregistrement
-userSchema.post("save", function () {
+// Log après save
+userSchema.post("save", async function (doc) {
   console.log("new user was created & saved successfully");
 });
 
-module.exports = mongoose.model("User", userSchema);
+// Méthode statique de login
+userSchema.statics.login = async function (email, password) {
+  const user = await this.findOne({ email });
+  if (user) {
+    const auth = await bcrypt.compare(password, user.password);
+    if (auth) {
+      return user;
+    } else {
+      throw new Error("password invalid");
+    }
+  } else {
+    throw new Error("email not found");
+  }
+};
+
+// Création du modèle et export
+const User = mongoose.model("User", userSchema);
+module.exports = User;

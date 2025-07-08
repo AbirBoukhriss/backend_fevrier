@@ -13,7 +13,7 @@ exports.sendMessage = async (req, res) => {
 // Get all messages
 exports.getMessages = async (req, res) => {
   try {
-    const messages = await Message.find();
+    const messages = await Message.find().sort({ createdAt: -1 }); // tri du plus récent au plus ancien
     res.status(200).json(messages);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -31,17 +31,20 @@ exports.getMessageById = async (req, res) => {
   }
 };
 
-// Get messages between two users
-exports.getMessagesBetweenUsers = async (req, res) => {
+// Update a message
+exports.updateMessage = async (req, res) => {
   try {
-    const { senderId, receiverId } = req.query;
-    const messages = await Message.find({
-      $or: [
-        { sender: senderId, receiver: receiverId },
-        { sender: receiverId, receiver: senderId }
-      ]
-    }).sort({ createdAt: 1 });
-    res.status(200).json(messages);
+    const updated = await Message.findByIdAndUpdate(
+      req.params.id,
+      {
+        content: req.body.content,
+        user: req.body.user,
+        notification: req.body.notification
+      },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ message: "Message not found" });
+    res.status(200).json(updated);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -58,28 +61,31 @@ exports.deleteMessage = async (req, res) => {
   }
 };
 
-// Update a message
-exports.updateMessage = async (req, res) => {
+// Get all messages for a specific user (sender or receiver via notification)
+exports.getMessagesForUser = async (req, res) => {
   try {
-    const updated = await Message.findByIdAndUpdate(
-      req.params.id,
-      { message: req.body.message },
-      { new: true }
-    );
-    if (!updated) return res.status(404).json({ message: "Message not found" });
-    res.status(200).json(updated);
+    const userId = req.params.userId;
+    const messages = await Message.find({
+      $or: [{ user: userId }, { notification: userId }]
+    }).sort({ createdAt: -1 });
+    res.status(200).json(messages);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Get all messages related to one user (sent or received)
-exports.getMessagesForUser = async (req, res) => {
+// Get messages between two users (via user and notification)
+exports.getMessagesBetweenUsers = async (req, res) => {
   try {
-    const userId = req.params.userId;
+    const { user1Id, user2Id } = req.params;
+
     const messages = await Message.find({
-      $or: [{ sender: userId }, { receiver: userId }]
-    }).sort({ createdAt: -1 });
+      $or: [
+        { user: user1Id, notification: user2Id },
+        { user: user2Id, notification: user1Id }
+      ]
+    }).sort({ createdAt: 1 });
+
     res.status(200).json(messages);
   } catch (error) {
     res.status(500).json({ message: error.message });

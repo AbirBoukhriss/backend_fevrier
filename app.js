@@ -6,6 +6,9 @@ var logger = require('morgan');
 require("dotenv").config();
 const { connectToMongoDb } = require("./config/db");
 const http = require('http');
+const session = require('express-session'); 
+const cors = require("cors"); // <== Ajouté ici
+const logMiddleware = require('./middlewares/logsMiddlewares.js'); //log
 
 var indexRouter = require('./routes/indexRouter');
 var usersRouter = require('./routes/usersRouter');
@@ -29,8 +32,6 @@ const noteRoutes = require("./routes/noteRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const roleRoutes = require("./routes/roleRouter");
 
-
-
 var app = express();
 
 app.use(logger('dev'));
@@ -39,12 +40,28 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use(logMiddleware)  //log
+
+app.use(cors({
+origins: "http://localhost:3000", 
+methods: "GET, POST, PUT, DELETE",
+}))
+app.use(session({   //cobfig session
+  secret: "net secret pfe",
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+    secure: {secure: false},
+    maxAge: 24*60*60,
+  
+  },  
+}))
+
 // Routes principales
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/os', osRouter);
 app.use("/clients", clientRoutes);
-
 
 // Ajout des routes personnalisées
 app.use("/notifications", notificationRoutes);
@@ -62,6 +79,7 @@ app.use("/freelancer", freelancerRoutes);
 app.use("/message", messageRoutes);
 app.use("/roles", roleRoutes);
 app.use("/note", noteRoutes);
+
 console.log("Comment routes loaded");
 
 // Catch 404 and forward to error handler
@@ -79,7 +97,7 @@ app.use(function (err, req, res, next) {
 
 // Démarrage du serveur HTTP
 const server = http.createServer(app);
-server.listen(process.env.PORT || 5000, () => {
+server.listen(process.env.PORT || 5001, () => {
   connectToMongoDb();
-  console.log(`App is running on port ${process.env.PORT || 5000}`);
+  console.log(`App is running on port ${process.env.PORT || 5001}`);
 });

@@ -1,5 +1,6 @@
 const Notification = require("../models/notificationSchema");
 
+// Créer une notification
 exports.createNotification = async (req, res) => {
   try {
     const notification = await Notification.create(req.body);
@@ -9,11 +10,10 @@ exports.createNotification = async (req, res) => {
   }
 };
 
-
+// Récupérer toutes les notifications
 exports.getAllNotifications = async (req, res) => {
   try {
     const notifications = await Notification.find()
-      .populate("userId")
       .populate("messageId")
       .populate("taskId");
     res.status(200).json(notifications);
@@ -22,11 +22,10 @@ exports.getAllNotifications = async (req, res) => {
   }
 };
 
-
+// Récupérer une notification par ID
 exports.getNotificationById = async (req, res) => {
   try {
     const notification = await Notification.findById(req.params.id)
-      .populate("userId")
       .populate("messageId")
       .populate("taskId");
 
@@ -40,7 +39,7 @@ exports.getNotificationById = async (req, res) => {
   }
 };
 
-
+// Supprimer une notification
 exports.deleteNotification = async (req, res) => {
   try {
     const result = await Notification.findByIdAndDelete(req.params.id);
@@ -53,6 +52,7 @@ exports.deleteNotification = async (req, res) => {
   }
 };
 
+// Mettre à jour une notification
 exports.updateNotification = async (req, res) => {
   try {
     const updated = await Notification.findByIdAndUpdate(
@@ -64,18 +64,6 @@ exports.updateNotification = async (req, res) => {
       return res.status(404).json({ message: "Notification not found" });
     }
     res.status(200).json(updated);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// Récupérer toutes les notifications d’un utilisateur
-exports.getNotificationsByUser = async (req, res) => {
-  try {
-    const notifications = await Notification.find({ userId: req.params.userId })
-      .populate("messageId")
-      .populate("taskId");
-    res.status(200).json(notifications);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
