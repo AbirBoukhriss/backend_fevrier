@@ -58,7 +58,8 @@ exports.deleteClient = async (req, res) => {
     const deleted = await Client.findByIdAndDelete(req.params.id);
 
     if (!deleted) return res.status(404).json({ message: "Client introuvable" });
-
+    await userModel.updateMany({ client: req.params.id }, { $unset: { client: "" } });
+    await Task.deleteMany({ clientId: req.params.id });
     res.status(200).json({ message: "Client supprimé avec succès" });
   } catch (error) {
     res.status(500).json({ message: error.message });

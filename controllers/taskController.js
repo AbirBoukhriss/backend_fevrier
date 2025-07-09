@@ -46,6 +46,9 @@ exports.deleteTask = async (req, res) => {
   try {
     const deletedTask = await Task.findByIdAndDelete(req.params.id);
     if (!deletedTask) return res.status(404).json({ message: "Tâche introuvable" });
+    await Client.updateMany({}, { $pull: { tasks: deletedTask._id } });
+    const Notification = require("../models/notificationSchema");
+    await Notification.deleteMany({ taskId: deletedTask._id });
     res.status(200).json({ message: "Tâche supprimée avec succès" });
   } catch (error) {
     res.status(500).json({ message: error.message });

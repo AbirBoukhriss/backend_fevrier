@@ -51,6 +51,8 @@ exports.deleteSubscription = async (req, res) => {
     if (!deleted) {
       return res.status(404).json({ message: "Subscription not found" });
     }
+    await Freelancer.updateMany({ subscription: req.params.id }, { $unset: { subscription: "" } });
+
     res.status(200).json({ message: "Subscription deleted" });
   } catch (error) {
     res.status(500).json({ message: error.message });

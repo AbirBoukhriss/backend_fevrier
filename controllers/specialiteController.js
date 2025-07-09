@@ -55,6 +55,8 @@ exports.deleteSpecialite = async (req, res) => {
     if (!deleted) {
       return res.status(404).json({ message: "Specialité non trouvée" });
     }
+    await Freelancer.updateMany({ specialite: req.params.id }, { $unset: { specialite: "" } });
+
     res.status(200).json({ message: "Specialité supprimée" });
   } catch (error) {
     res.status(500).json({ message: error.message });

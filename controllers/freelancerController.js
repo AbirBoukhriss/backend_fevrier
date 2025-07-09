@@ -20,7 +20,7 @@ exports.getAllFreelancers = async (req, res) => {
 
 exports.getFreelancerById = async (req, res) => {
   try {
-    const freelancer = await Freelancer.findById(req.params.id);
+    const freelancer = await Freelancer.findById(req.params.id).populate("subscription").populate("specialite").populate("experiences").populate("formations").populate("projets").populate("certifications").populate("competences");
     if (!freelancer) {
       return res.status(404).json({ message: "Freelancer not found" });
     }
@@ -52,6 +52,7 @@ exports.deleteFreelancer = async (req, res) => {
     if (!deleted) {
       return res.status(404).json({ message: "Freelancer not found" });
     }
+    await userModel.updateMany({ freelance: deleted._id }, { $unset: { freelance: "" } });
     res.status(200).json({ message: "Freelancer deleted" });
   } catch (error) {
     res.status(500).json({ message: error.message });
