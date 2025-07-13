@@ -1,4 +1,5 @@
 const Specialite = require("../models/specialiteSchema");
+const Freelancer = require("../models/freelanceSchema");
 
 
 exports.addSpecialite = async (req, res) => {

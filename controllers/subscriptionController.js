@@ -1,4 +1,5 @@
 const Subscription = require("../models/subscriptionSchema");
+const Freelancer = require("../models/freelanceSchema");
 
 exports.addSubscription = async (req, res) => {
   try {

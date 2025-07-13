@@ -1,5 +1,5 @@
 const Experience = require("../models/experienceSchema");
-
+const Freelancer = require("../models/freelanceSchema");
 exports.addExperience = async (req, res) => {
   try {
     const exp = await Experience.create(req.body);
@@ -53,6 +53,10 @@ exports.deleteExperience = async (req, res) => {
     if (!exp) {
       return res.status(404).json({ message: "Experience not found" });
     }
+      await Freelancer.updateMany(
+      { experiences: req.params.id },
+      { $pull: { experiences: req.params.id } }
+    );
     res.status(200).json({ message: "Experience deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });

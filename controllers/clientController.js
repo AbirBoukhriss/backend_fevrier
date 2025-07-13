@@ -1,6 +1,7 @@
 const Client = require("../models/clientSchema");
 const Note = require("../models/noteSchema");
 const Task = require("../models/taskSchema");
+const userModel = require("../models/userSchema");
 
 exports.addClient = async (req, res) => {
   try {

@@ -1,4 +1,6 @@
 const Formation = require("../models/formationSchema");
+const Freelancer = require("../models/freelanceSchema"); // en haut du fichier
+
 
 
 exports.addFormation = async (req, res) => {
@@ -42,6 +44,10 @@ exports.updateFormation = async (req, res) => {
     if (!updated) {
       return res.status(404).json({ message: "Formation non trouvée" });
     }
+    await Freelancer.updateMany(
+  { formations: req.params.id },
+  { $pull: { formations: req.params.id } }
+);
     res.status(200).json(updated);
   } catch (error) {
     res.status(500).json({ message: error.message });

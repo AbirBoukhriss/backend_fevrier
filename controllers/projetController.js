@@ -1,9 +1,22 @@
 const Projet = require("../models/projetSchema");
+const Freelancer = require("../models/freelanceSchema");
 
 
 exports.addProjet = async (req, res) => {
   try {
-    const projet = await Projet.create(req.body);
+    const { freelancer, ...projetData } = req.body;
+
+    const exists = await Freelancer.findById(freelancer);
+    if (!exists) {
+      return res.status(404).json({ message: "Freelancer introuvable" });
+    }
+
+    const projet = await Projet.create({ ...projetData, freelancer });
+
+    await Freelancer.findByIdAndUpdate(freelancer, {
+      $push: { projets: projet._id }
+    });
+
     res.status(201).json(projet);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -52,6 +65,11 @@ exports.deleteProjet = async (req, res) => {
     if (!deleted) {
       return res.status(404).json({ message: "Projet non trouvé" });
     }
+
+    await Freelancer.findByIdAndUpdate(deleted.freelancer, {
+      $pull: { projets: deleted._id }
+    });
+
     res.status(200).json({ message: "Projet supprimé" });
   } catch (error) {
     res.status(500).json({ message: error.message });

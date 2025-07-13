@@ -1,4 +1,6 @@
 const Freelancer = require("../models/freelanceSchema");
+const userModel = require("../models/userSchema");
+
 
 exports.addFreelancer = async (req, res) => {
   try {
@@ -20,7 +22,15 @@ exports.getAllFreelancers = async (req, res) => {
 
 exports.getFreelancerById = async (req, res) => {
   try {
-    const freelancer = await Freelancer.findById(req.params.id).populate("subscription").populate("specialite").populate("experiences").populate("formations").populate("projets").populate("certifications").populate("competences");
+    const freelancer = await Freelancer.findById(req.params.id)  .populate([
+    "subscription",
+    "specialite",
+    "experiences",
+    "formations",
+    "projets",
+    "certifications",
+    "competences"
+  ]);
     if (!freelancer) {
       return res.status(404).json({ message: "Freelancer not found" });
     }

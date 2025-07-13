@@ -1,9 +1,14 @@
 const Message = require("../models/messageSchema");
+const User = require("../models/userSchema");
+const Notification = require("../models/notificationSchema");
 
 // Create (send) a new message
 exports.sendMessage = async (req, res) => {
   try {
     const msg = await Message.create(req.body);
+    await User.findByIdAndUpdate(req.body.user, {
+    $addToSet: { messages: msg._id }
+    });
     res.status(201).json(msg);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -53,10 +58,21 @@ exports.updateMessage = async (req, res) => {
 // Delete a message
 exports.deleteMessage = async (req, res) => {
   try {
-    const deleted = await Message.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: "Message not found" });
+    const message = await Message.findById(req.params.id);
+    if (!message) return res.status(404).json({ message: "Message not found" });
+
+    // Supprimer le message
+    await Message.findByIdAndDelete(req.params.id);
+
+    // Supprimer les notifications liées
     await Notification.deleteMany({ messageId: req.params.id });
-    res.status(200).json({ message: "Message deleted" });
+
+    // Retirer l'ID du message dans le tableau "messages" du user
+    await User.findByIdAndUpdate(message.user, {
+      $pull: { messages: message._id }
+    });
+
+    res.status(200).json({ message: "Message deleted and user updated" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

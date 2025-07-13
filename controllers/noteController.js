@@ -1,4 +1,6 @@
 const Note = require("../models/noteSchema");
+const Freelancer = require("../models/freelanceSchema");
+
 
 
 exports.addNote = async (req, res) => {
@@ -53,6 +55,11 @@ exports.deleteNote = async (req, res) => {
     if (!note) {
       return res.status(404).json({ message: "Note non trouvée" });
     }
+    await Freelancer.updateMany(
+  { notes: req.params.id },
+  { $pull: { notes: req.params.id } }
+);
+
     res.status(200).json({ message: "Note supprimée" });
   } catch (error) {
     res.status(500).json({ message: error.message });

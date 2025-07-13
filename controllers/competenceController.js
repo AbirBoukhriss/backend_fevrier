@@ -1,4 +1,6 @@
 const Competence = require("../models/competenceSchema");
+const Freelancer = require("../models/freelanceSchema");
+
 
 
 exports.addCompetence = async (req, res) => {
@@ -50,6 +52,10 @@ exports.deleteCompetence = async (req, res) => {
     if (!deleted) {
       return res.status(404).json({ message: "Compétence non trouvée" });
     }
+    await Freelancer.updateMany(
+  { competences: req.params.id },
+  { $pull: { competences: req.params.id } }
+);
     res.status(200).json({ message: "Compétence supprimée" });
   } catch (error) {
     res.status(500).json({ message: error.message });
