@@ -31,7 +31,8 @@ const userSchema = new mongoose.Schema({
   messages: [{ type: mongoose.Schema.Types.ObjectId, ref: "Message" }],
   client: { type: mongoose.Schema.Types.ObjectId, ref: "Client" },
   freelance: { type: mongoose.Schema.Types.ObjectId, ref: "Freelance" },
-  user_image: { type: String, default: "client.png" },
+  user_image: { type: String, default: "uploads/client.png" },
+
   age: { type: Number },
   count: { type: Number, default: 0 },
   etat: Boolean,

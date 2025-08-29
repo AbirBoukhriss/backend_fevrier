@@ -1,44 +1,87 @@
 const userModel = require('../models/userSchema');
+const Freelancer = require('../models/freelanceSchema'); // 🔹 ajouter l'import
 const jwt = require('jsonwebtoken');
 
-const maxTime = 24 *60 * 60 //24H
-//const maxTime = 1 * 60 //1min
+const maxTime = 24 * 60 * 60;
 const createToken = (id) => {
-    return jwt.sign({id},'net secret pfe', {expiresIn: maxTime })
-}
+  return jwt.sign({ id }, 'net secret pfe', { expiresIn: maxTime });
+};
 
-module.exports.addUserClient = async (req,res) => {
-    try {
-        const {username , email , password , age} = req.body;
-        const roleClient = 'client'
-        // if (!checkIfUserExists) {
-        //     throw new Error("User not found");
-        //   }
-        const user = await userModel.create({
-            username,email ,password,role :roleClient, age
-        })
-        // const user = new userModel({name,age,address,moy});
-        //   const adduser = await user.save();
-        res.status(200).json({user});
-    } catch (error) {
-        res.status(500).json({message: error.message});
+module.exports.addUserClient = async (req, res) => {
+  try {
+    const { username, email, password, age, role } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: "Tous les champs obligatoires ne sont pas fournis." });
     }
-}
+
+    const allowedRoles = ["client", "freelancer"];
+    const userRole = allowedRoles.includes(role) ? role : "client";
+
+    // 1️⃣ Créer l'utilisateur
+    const user = await userModel.create({
+      username,
+      email,
+      password,
+      role: userRole,
+      age,
+    });
+
+    // 2️⃣ Si c'est un freelancer → créer aussi un document Freelance
+    if (userRole === "freelancer") {
+      await Freelancer.create({
+        userId: user._id,
+        info: {
+          nom: "",
+          prenom: "",
+          email: user.email,
+          password: user.password,
+          photo: "",
+          adresse: {}
+        }
+      });
+    }
+
+    const userData = {
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      age: user.age,
+    };
+
+    res.status(201).json({ user: userData });
+
+  } catch (error) {
+    console.error("Erreur création utilisateur:", error);
+    if (error.code === 11000) {
+      const duplicatedField = Object.keys(error.keyValue)[0];
+      return res.status(409).json({ message: `Le ${duplicatedField} est déjà utilisé.` });
+    }
+    res.status(500).json({ message: "Erreur lors de la création de l'utilisateur." });
+  }
+};
 
 module.exports.addUserClientWithImg = async (req,res) => {
     try {
-        const {username , email , password } = req.body;
-        const roleClient = 'client'
-        const {filename} = req.file
+        const {username , email , password, role} = req.body;
+        const {filename} = req.file;
+        const allowedRoles = ["client", "freelancer"];
+        const userRole = allowedRoles.includes(role) ? role : "client";
 
         const user = await userModel.create({
-            username,email ,password,role :roleClient , user_image : filename
-        })
+            username,
+            email,
+            password,
+            role: userRole,
+            user_image: filename
+        });
         res.status(200).json({user});
     } catch (error) {
         res.status(500).json({message: error.message});
     }
 }
+
 
     module.exports.addUserAdmin = async (req,res) => {
     try{

@@ -1,15 +1,18 @@
+// models/freelanceSchema.js
 const mongoose = require("mongoose");
+
 const freelanceSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", unique: true }, // One-to-One avec User
-  notes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Note" }], // Many-to-Many avec Client
-   comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Comment" }],
-  competences: [{ type: mongoose.Schema.Types.ObjectId, ref: "Competence" }], // One-to-Many
-  certifications: [{ type: mongoose.Schema.Types.ObjectId, ref: "Certification" }],
-  projets: [{ type: mongoose.Schema.Types.ObjectId, ref: "Projet" }],
-  formations: [{ type: mongoose.Schema.Types.ObjectId, ref: "Formation" }],
-  experiences: [{ type: mongoose.Schema.Types.ObjectId, ref: "Experience" }],
-  subscription: { type: mongoose.Schema.Types.ObjectId, ref: "Subscription" }, // Many-to-One
-  specialite: { type: mongoose.Schema.Types.ObjectId, ref: "Specialite" }, // Many-to-One
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true, unique: true, sparse: true },
+  notes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Note" }],
+  comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Comment" }],
+  competences: [String],
+  certifications: [String],
+  projets: [String],
+  formations: [String],
+  experiences: [String],
+  subscription: { type: mongoose.Schema.Types.ObjectId, ref: "Subscription" },
+  specialite: String,
+  cv: { type: String },
   info: {
     nom: String,
     prenom: String,

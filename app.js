@@ -1,103 +1,152 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+var createError = require("http-errors");
+var express = require("express");
+var path = require("path");
+var cookieParser = require("cookie-parser");
+var logger = require("morgan");
 require("dotenv").config();
 const { connectToMongoDb } = require("./config/db");
-const http = require('http');
-const session = require('express-session'); 
-const cors = require("cors"); // <== Ajouté ici
-const logMiddleware = require('./middlewares/logsMiddlewares.js'); //log
-
-var indexRouter = require('./routes/indexRouter');
-var usersRouter = require('./routes/usersRouter');
-var osRouter = require('./routes/osRouter');
-const clientRoutes = require("./routes/clientRoutes");
-
-// Importation de toutes les routes des entités
-const notificationRoutes = require("./routes/notificationRouter");
-const experienceRoutes = require("./routes/experienceRouter");
-const formationRoutes = require("./routes/formationRouter");
-const certificationRoutes = require("./routes/certificationRouter");
-const projetRoutes = require("./routes/projetRouter");
-const competenceRoutes = require("./routes/competenceRouter");
-const specialiteRoutes = require("./routes/specialiteRouter");
-const categorieTaskRoutes = require("./routes/categorieTaskRouter");
-const subscriptionRoutes = require("./routes/subscriptionRouter");
-const commentRoutes = require("./routes/commentRouter");
-const freelancerRoutes = require("./routes/freelancerRoutes");
-const messageRoutes = require("./routes/messageRoutes");
-const noteRoutes = require("./routes/noteRoutes");
-const taskRoutes = require("./routes/taskRoutes");
-const roleRoutes = require("./routes/roleRouter");
+const http = require("http");
+const session = require("express-session");
+const cors = require("cors");
+const logMiddleware = require("./middlewares/logsMiddlewares.js");
+const notteRoutes = require("./routes/notteRoute");
 
 var app = express();
 
-app.use(logger('dev'));
+// --- Middlewares
+app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-app.use(logMiddleware)  //log
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+app.options("*", cors());
 
-app.use(cors({
-origins: "http://localhost:3000", 
-methods: "GET, POST, PUT, DELETE",
-}))
-app.use(session({   //cobfig session
-  secret: "net secret pfe",
-  resave: false,
-  saveUninitialized: true,
-  cookie: {
-    secure: {secure: false},
-    maxAge: 24*60*60,
-  
-  },  
-}))
+app.use(
+  session({
+    secret: "net secret pfe",
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 },
+  })
+);
 
-// Routes principales
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
-app.use('/os', osRouter);
-app.use("/clients", clientRoutes);
+app.use(logMiddleware);
 
-// Ajout des routes personnalisées
-app.use("/notifications", notificationRoutes);
-app.use("/task", taskRoutes);
-app.use("/experiences", experienceRoutes);
-app.use("/formations", formationRoutes);
-app.use("/certifications", certificationRoutes);
-app.use("/projets", projetRoutes);
-app.use("/competences", competenceRoutes);
-app.use("/specialites", specialiteRoutes);
-app.use("/categorie-tasks", categorieTaskRoutes);
-app.use("/subscriptions", subscriptionRoutes);
-app.use("/comments", commentRoutes);
-app.use("/freelancer", freelancerRoutes);
-app.use("/message", messageRoutes);
-app.use("/roles", roleRoutes);
-app.use("/note", noteRoutes);
+// --- Routes API
+app.use("/users", require("./routes/usersRouter"));
+app.use("/", require("./routes/indexRouter"));
+app.use("/os", require("./routes/osRouter"));
+app.use("/clients", require("./routes/clientRoutes"));
+app.use("/notifications", require("./routes/notificationRouter"));
+app.use("/task", require("./routes/taskRoutes"));
+app.use("/experiences", require("./routes/experienceRouter"));
+app.use("/formations", require("./routes/formationRouter"));
+app.use("/certifications", require("./routes/certificationRouter"));
+app.use("/projets", require("./routes/projetRouter"));
+app.use("/competences", require("./routes/competenceRouter"));
+app.use("/specialites", require("./routes/specialiteRouter"));
+app.use("/categorie-tasks", require("./routes/categorieTaskRouter"));
+app.use("/subscriptions", require("./routes/subscriptionRouter"));
+app.use("/comments", require("./routes/commentRouter"));
+app.use("/freelancer", require("./routes/freelancerRoutes"));
+app.use("/message", require("./routes/messageReelRoutes")); // ✅ Historique seulement
+app.use("/old-message", require("./routes/messageRoutes"));
+app.use("/roles", require("./routes/roleRouter"));
+app.use("/note", require("./routes/noteRoutes"));
+app.use("/notte", notteRoutes);
 
-console.log("Comment routes loaded");
 
-// Catch 404 and forward to error handler
-app.use(function (req, res, next) {
-  next(createError(404));
+console.log("✅ Routes loaded");
+
+// --- 404 + error handler
+app.use((req, res, next) => next(createError(404)));
+app.use((err, req, res, next) => {
+  res.status(err.status || 500).json({ error: err.message });
 });
 
-// Error handler
-app.use(function (err, req, res, next) {
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
-  res.status(err.status || 500);
-  res.json({ error: err.message });
-});
-
-// Démarrage du serveur HTTP
+// --- SOCKET.IO
 const server = http.createServer(app);
-server.listen(process.env.PORT || 5001, () => {
-  connectToMongoDb();
-  console.log(`App is running on port ${process.env.PORT || 5001}`);
+const { Server } = require("socket.io");
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+const Message = require("./models/messageReelModel");
+
+let users = {}; // { userId: socketId }
+
+io.on("connection", (socket) => {
+  console.log("✅ User connected:", socket.id);
+
+  // Quand un user se connecte, on l’enregistre
+  socket.on("register", ({ userId }) => {
+    users[userId] = socket.id;
+    socket.data.userId = userId;
+    console.log("📌 Registered:", userId, "=>", socket.id);
+  });
+
+  // Messages temps réel + persistance
+  socket.on("sendMessage", async (msg) => {
+    try {
+      console.log("📩 Nouveau message:", msg);
+
+      // Sauvegarde MongoDB
+      const newMessage = new Message(msg);
+      await newMessage.save();
+
+      // envoyer au destinataire
+      const receiverSocket = users[msg.receiverId];
+      if (receiverSocket) {
+        io.to(receiverSocket).emit("receiveMessage", newMessage);
+      }
+
+      // renvoyer aussi à l’expéditeur (confirmation)
+      const senderSocket = users[msg.senderId];
+      if (senderSocket) {
+        io.to(senderSocket).emit("receiveMessage", newMessage);
+      }
+    } catch (err) {
+      console.error("❌ Erreur socket saveMessage:", err);
+    }
+  });
+
+  // Signaling WebRTC (appel vidéo)
+  socket.on("callUser", ({ userToCall, signalData, from }) => {
+    const receiverSocket = users[userToCall];
+    if (receiverSocket) {
+      io.to(receiverSocket).emit("incomingCall", { from, signal: signalData });
+    }
+  });
+
+  socket.on("answerCall", ({ to, signal }) => {
+    const callerSocket = users[to];
+    if (callerSocket) io.to(callerSocket).emit("callAccepted", signal);
+  });
+
+  // Déconnexion
+  socket.on("disconnect", () => {
+    console.log("❌ User disconnected:", socket.id);
+    const { userId } = socket.data || {};
+    if (userId && users[userId] === socket.id) {
+      delete users[userId];
+    }
+  });
+});
+
+// --- Lancer serveur
+server.listen(process.env.PORT || 5001, "0.0.0.0", async () => {
+  await connectToMongoDb();
+  console.log(`🚀 App is running on port ${process.env.PORT || 5001}`);
 });

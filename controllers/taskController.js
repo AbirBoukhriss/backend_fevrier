@@ -1,75 +1,136 @@
-const mongoose = require("mongoose");
 const Task = require("../models/taskSchema");
+const User = require("../models/userSchema");
+const jwt = require("jsonwebtoken");
 
+// ➕ Ajouter une tâche
 exports.addTask = async (req, res) => {
   try {
-    const task = await Task.create(req.body);
+    const { titre, description, date_debut, date_fin, categorie, clientName, skills } = req.body;
+
+    const task = await Task.create({
+      titre,
+      description,
+      date_debut,
+      date_fin,
+      categorie,
+      clientName,
+      clientPhoto: req.file ? `/uploads/${req.file.filename}` : null,
+      skills: skills ? skills.split(",") : [],
+    });
+
     res.status(201).json(task);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+// 📋 Récupérer toutes les tâches
 exports.getAllTasks = async (req, res) => {
   try {
     const tasks = await Task.find();
-    res.status(200).json(tasks);
+    res.json(tasks);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+// 📋 Récupérer les tâches par catégorie
+exports.getTasksByCategory = async (req, res) => {
+  try {
+    const cat = req.params.cat; // ex: "data-scientist"
+    const tasks = await Task.find({ categorie: cat });
+    res.json(tasks);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 📋 Récupérer tâche par ID
 exports.getTaskById = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
-    if (!task) return res.status(404).json({ message: "Tâche introuvable" });
-    res.status(200).json(task);
+    if (!task) return res.status(404).json({ message: "Tâche non trouvée" });
+    res.json(task);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+// ✏️ Modifier une tâche
 exports.updateTask = async (req, res) => {
   try {
-    const updatedTask = await Task.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-    if (!updatedTask) return res.status(404).json({ message: "Tâche introuvable" });
-    res.status(200).json(updatedTask);
+    const task = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!task) return res.status(404).json({ message: "Tâche non trouvée" });
+    res.json(task);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+// 🗑️ Supprimer une tâche
 exports.deleteTask = async (req, res) => {
   try {
-    const deletedTask = await Task.findByIdAndDelete(req.params.id);
-    if (!deletedTask) return res.status(404).json({ message: "Tâche introuvable" });
-    await Client.updateMany({}, { $pull: { tasks: deletedTask._id } });
-    const Notification = require("../models/notificationSchema");
-    await Notification.deleteMany({ taskId: deletedTask._id });
-    res.status(200).json({ message: "Tâche supprimée avec succès" });
+    const task = await Task.findByIdAndDelete(req.params.id);
+    if (!task) return res.status(404).json({ message: "Tâche non trouvée" });
+    res.json({ message: "Tâche supprimée" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-exports.getTasksByFreelancer = async (req, res) => {
+// 👍 Like une tâche
+exports.likeTask = async (req, res) => {
   try {
-    const freelancerId = new mongoose.Types.ObjectId(req.params.freelancerId);
-    const tasks = await Task.find({ freelancerId });
-    res.status(200).json(tasks);
+    const task = await Task.findById(req.params.id);
+    if (!task) return res.status(404).json({ message: "Tâche non trouvée" });
+
+    task.likes += 1;
+    await task.save();
+    res.json(task);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-exports.getTasksByClient = async (req, res) => {
+// 🔗 Share une tâche
+exports.shareTask = async (req, res) => {
   try {
-    const clientId = new mongoose.Types.ObjectId(req.params.clientId);
-    const tasks = await Task.find({ clientId });
-    res.status(200).json(tasks);
+    const task = await Task.findById(req.params.id);
+    if (!task) return res.status(404).json({ message: "Tâche non trouvée" });
+
+    task.shares += 1;
+    await task.save();
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 💬 Ajouter un commentaire avec user connecté
+exports.addComment = async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id);
+    if (!task) return res.status(404).json({ message: "Tâche non trouvée" });
+
+    // Vérifier le token JWT dans les cookies
+    const token = req.cookies.jwt_token_9antra;
+    if (!token) return res.status(401).json({ message: "Utilisateur non authentifié" });
+
+    // Décoder le token
+    const decoded = jwt.verify(token, "net secret pfe");
+
+    // Récupérer l'utilisateur connecté
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+
+    // Ajouter commentaire avec username
+    task.comments.push({
+      user: user.username,
+      text: req.body.text,
+    });
+
+    await task.save();
+    res.json(task);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
