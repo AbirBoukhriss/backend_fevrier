@@ -10,6 +10,7 @@ const session = require("express-session");
 const cors = require("cors");
 const logMiddleware = require("./middlewares/logsMiddlewares.js");
 const notteRoutes = require("./routes/notteRoute");
+const Message = require("./models/messageSchema"); // ✅ importer le modèle Message correctement
 
 var app = express();
 
@@ -62,7 +63,7 @@ app.use("/old-message", require("./routes/messageRoutes"));
 app.use("/roles", require("./routes/roleRouter"));
 app.use("/note", require("./routes/noteRoutes"));
 app.use("/notte", notteRoutes);
-
+app.use("/messages", require("./routes/messageRoutes"));
 
 console.log("✅ Routes loaded");
 
@@ -83,64 +84,81 @@ const io = new Server(server, {
   },
 });
 
-const Message = require("./models/messageReelModel");
-
-let users = {}; // { userId: socketId }
+const users = {}; // { userId: socketId }
 
 io.on("connection", (socket) => {
-  console.log("✅ User connected:", socket.id);
+  console.log("✅ Socket connecté :", socket.id);
 
-  // Quand un user se connecte, on l’enregistre
-  socket.on("register", ({ userId }) => {
+  // --- Enregistrement user
+  socket.on("register", async ({ userId }) => {
     users[userId] = socket.id;
     socket.data.userId = userId;
-    console.log("📌 Registered:", userId, "=>", socket.id);
-  });
+    console.log("👤 Register :", userId, "=>", socket.id);
+    console.log("🟢 Users connectés :", users);
 
-  // Messages temps réel + persistance
-  socket.on("sendMessage", async (msg) => {
+    // --- Envoyer les messages non délivrés
     try {
-      console.log("📩 Nouveau message:", msg);
-
-      // Sauvegarde MongoDB
-      const newMessage = new Message(msg);
-      await newMessage.save();
-
-      // envoyer au destinataire
-      const receiverSocket = users[msg.receiverId];
-      if (receiverSocket) {
-        io.to(receiverSocket).emit("receiveMessage", newMessage);
-      }
-
-      // renvoyer aussi à l’expéditeur (confirmation)
-      const senderSocket = users[msg.senderId];
-      if (senderSocket) {
-        io.to(senderSocket).emit("receiveMessage", newMessage);
-      }
+      const pending = await Message.find({ receiverId: userId, delivered: false });
+      console.log(`📥 Messages non délivrés pour ${userId} :`, pending.length);
+      pending.forEach(async (msg) => {
+        io.to(socket.id).emit("receiveMessage", msg);
+        msg.delivered = true;
+        await msg.save();
+        console.log("📤 Message délivré :", msg._id, "à", userId);
+      });
     } catch (err) {
-      console.error("❌ Erreur socket saveMessage:", err);
+      console.error("❌ Erreur récupération messages non délivrés:", err);
     }
   });
 
-  // Signaling WebRTC (appel vidéo)
-  socket.on("callUser", ({ userToCall, signalData, from }) => {
-    const receiverSocket = users[userToCall];
-    if (receiverSocket) {
-      io.to(receiverSocket).emit("incomingCall", { from, signal: signalData });
+  // --- Envoi d'un message
+  socket.on("sendMessage", async (data) => {
+    console.log("📩 Nouveau message :", data);
+    console.log("🟢 Users connectés :", users);
+
+    try {
+      const newMsg = new Message({
+        senderId: data.senderId,
+        receiverId: data.receiverId,
+        message: data.message,
+        delivered: false,
+        timestamp: new Date(),
+      });
+      await newMsg.save();
+      console.log("💾 Message sauvegardé :", newMsg._id);
+
+      const receiverSocketId = users[data.receiverId];
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("receiveMessage", newMsg);
+        newMsg.delivered = true;
+        await newMsg.save();
+        console.log(`📨 Message envoyé en direct à ${data.receiverId}`);
+      } else {
+        console.log("⚠ Receiver pas connecté:", data.receiverId);
+      }
+
+      // --- Mise à jour côté sender
+      io.to(socket.id).emit("receiveMessage", newMsg);
+    } catch (err) {
+      console.error("❌ Erreur envoi message:", err);
     }
   });
 
-  socket.on("answerCall", ({ to, signal }) => {
-    const callerSocket = users[to];
-    if (callerSocket) io.to(callerSocket).emit("callAccepted", signal);
+  // --- Déconnexion
+  socket.on("disconnect", () => {
+    console.log("❌ User disconnected:", socket.id);
+    for (let userId in users) {
+      if (users[userId] === socket.id) delete users[userId];
+    }
+    console.log("🟢 Users restants :", users);
   });
+
 
   // Déconnexion
   socket.on("disconnect", () => {
     console.log("❌ User disconnected:", socket.id);
-    const { userId } = socket.data || {};
-    if (userId && users[userId] === socket.id) {
-      delete users[userId];
+    for (let userId in users) {
+      if (users[userId] === socket.id) delete users[userId];
     }
   });
 });

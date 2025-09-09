@@ -1,9 +1,12 @@
 const mongoose = require("mongoose");
 
 const messageSchema = new mongoose.Schema({
-  content: String,
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  notification: { type: mongoose.Schema.Types.ObjectId, ref: "Notification" } // Ajout du receiver
+  senderId: { type: String, required: true },
+  receiverId: { type: String, required: true },
+  message: { type: String, required: true },
+  delivered: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model("Message", messageSchema);
+// Vérifie si le modèle existe déjà (évite OverwriteModelError)
+module.exports = mongoose.models.Message || mongoose.model("Message", messageSchema);

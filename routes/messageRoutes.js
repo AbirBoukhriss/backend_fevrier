@@ -1,13 +1,16 @@
-const router = require("express").Router();
-const controller = require("../controllers/messageController");
+// routes/messageRoutes.js
+const express = require("express");
+const router = express.Router();
+const Message = require("../models/messageSchema");
 
-
-router.post("/sendMsg", controller.sendMessage);
-router.get("/getMsg", controller.getMessages);
-router.get("/getMsg/:id", controller.getMessageById);
-router.get("/between/:user1Id/:user2Id", controller.getMessagesBetweenUsers);
-router.delete("/deleteMsg/:id", controller.deleteMessage);
-router.put("/updateMsg/:id", controller.updateMessage);
-router.get("/user/:userId", controller.getMessagesForUser);
+// GET /messages/received/:userId
+router.get("/received/:userId", async (req, res) => {
+  try {
+    const messages = await Message.find({ receiverId: req.params.userId }).sort({ createdAt: 1 });
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = router;
