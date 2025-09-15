@@ -28,5 +28,5 @@ router.post("/share/:id", controller.shareTask);
 // 💬 Commentaire (protégé)
 router.post("/comment/:id", requireAuthUser, controller.addComment);
 router.get("/categorie/:cat", controller.getTasksByCategory);
-
+router.get("/client/:clientId", controller.getTasksByClientId);
 module.exports = router;

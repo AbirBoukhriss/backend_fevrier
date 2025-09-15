@@ -2,8 +2,10 @@ var express = require('express');
 var router = express.Router();
 const userController = require('../controllers/userController');
 console.log("Fonctions du userController :", Object.keys(userController));
-const upload = require('../middlewares/uploadFile');
+const uploadfile = require('../middlewares/uploadFile'); // correspond au module que tu as
+
 const {requireAuthUser} = require('../middlewares/authMiddleware');
+
 /* GET users listing. */
 router.post('/addUserClient', userController.addUserClient);
 router.post('/addUserAdmin', userController.addUserAdmin);
@@ -19,6 +21,6 @@ router.get('/getAllUsersAgeBetMaxAgeMinAge',userController.getAllUsersAgeBetMaxA
 router.get('/getAllClient', userController.getAllClient);
 router.get('/getAllAdmin', userController.getAllAdmin);
 
-router.post('/addUserClientWithImg',upload.single("image_user"),userController.addUserClientWithImg); 
+router.post('/addUserClientWithImg', uploadfile.single("image_user"), userController.addUserClientWithImg);
 
 module.exports = router;

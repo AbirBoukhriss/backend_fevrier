@@ -9,7 +9,7 @@ const createToken = (id) => {
 
 module.exports.addUserClient = async (req, res) => {
   try {
-    const { username, email, password, age, role } = req.body;
+    const { username, email, password, phone,address, role } = req.body;
 
     if (!username || !email || !password) {
       return res.status(400).json({ message: "Tous les champs obligatoires ne sont pas fournis." });
@@ -24,7 +24,10 @@ module.exports.addUserClient = async (req, res) => {
       email,
       password,
       role: userRole,
-      age,
+      phone,
+    address
+     
+
     });
 
     // 2️⃣ Si c'est un freelancer → créer aussi un document Freelance
@@ -62,25 +65,35 @@ module.exports.addUserClient = async (req, res) => {
   }
 };
 
-module.exports.addUserClientWithImg = async (req,res) => {
-    try {
-        const {username , email , password, role} = req.body;
-        const {filename} = req.file;
-        const allowedRoles = ["client", "freelancer"];
-        const userRole = allowedRoles.includes(role) ? role : "client";
+module.exports.addUserClientWithImg = async (req, res) => {
+  try {
+    const { username, email, role } = req.body;
 
-        const user = await userModel.create({
-            username,
-            email,
-            password,
-            role: userRole,
-            user_image: filename
-        });
-        res.status(200).json({user});
-    } catch (error) {
-        res.status(500).json({message: error.message});
+    if (!req.file) {
+      return res.status(400).json({ message: "Aucune image envoyée !" });
     }
-}
+
+    // Mettre à jour l'utilisateur ou en créer un nouveau
+    let user = await userModel.findOne({ email }); // si tu veux update selon email
+    if (!user) {
+      user = new userModel({
+        username,
+        email,
+        role: role || "client",
+        user_image: "/files/" + req.file.filename // chemin relatif à public
+      });
+    } else {
+      user.user_image = "/files/" + req.file.filename;
+    }
+
+    await user.save();
+
+    res.status(200).json({ message: "Image ajoutée avec succès ✅", user });
+  } catch (error) {
+    console.error("Erreur addUserClientWithImg:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
 
 
     module.exports.addUserAdmin = async (req,res) => {
@@ -141,18 +154,24 @@ module.exports.addUserClientWithImg = async (req,res) => {
 
 
 module.exports.updateuserById = async (req, res) => {
-try {
-    const {id} = req.params
-    const {email , username} = req.body;
+  try {
+    const { id } = req.params;
+    const { email, username, phone, address, bio } = req.body;
 
-    await userModel.findByIdAndUpdate(id,{$set : {email , username }})
-    const updated = await userModel.findById(id)
+    // ⚡ On update tous les champs que tu veux
+    await userModel.findByIdAndUpdate(
+      id,
+      { $set: { email, username, phone, address, bio } },
+      { new: true } // pour retourner le user mis à jour directement
+    );
 
-    res.status(200).json({updated})
-} catch (error) {
-    res.status(500).json({message: error.message});
-}
-}
+    const updated = await userModel.findById(id);
+    res.status(200).json({ updated });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 module.exports.searchUserByUsername = async (req, res) => {
     try {

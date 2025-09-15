@@ -19,7 +19,11 @@ const taskSchema = new mongoose.Schema({
       createdAt: { type: Date, default: Date.now },
     },
   ],
-
+clientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User", // ou "User" selon ton modèle
+    required: true,
+  },
   skills: { type: [String], default: [] },
 });
 

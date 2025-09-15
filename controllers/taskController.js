@@ -3,9 +3,14 @@ const User = require("../models/userSchema");
 const jwt = require("jsonwebtoken");
 
 // ➕ Ajouter une tâche
+// ➕ Ajouter une tâche
 exports.addTask = async (req, res) => {
   try {
-    const { titre, description, date_debut, date_fin, categorie, clientName, skills } = req.body;
+    const { titre, description, date_debut, date_fin, categorie, clientName, clientId, skills } = req.body;
+
+    if (!titre || !description || !clientId) {
+      return res.status(400).json({ message: "Titre, description et clientId sont obligatoires" });
+    }
 
     const task = await Task.create({
       titre,
@@ -14,15 +19,18 @@ exports.addTask = async (req, res) => {
       date_fin,
       categorie,
       clientName,
+      clientId,
       clientPhoto: req.file ? `/uploads/${req.file.filename}` : null,
       skills: skills ? skills.split(",") : [],
     });
 
     res.status(201).json(task);
   } catch (error) {
+    console.error("❌ Erreur addTask:", error);
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // 📋 Récupérer toutes les tâches
 exports.getAllTasks = async (req, res) => {
@@ -106,6 +114,10 @@ exports.shareTask = async (req, res) => {
   }
 };
 
+
+
+
+
 // 💬 Ajouter un commentaire avec user connecté
 exports.addComment = async (req, res) => {
   try {
@@ -133,5 +145,20 @@ exports.addComment = async (req, res) => {
     res.json(task);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+exports.getTasksByClientId = async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    const tasks = await Task.find({ clientId }); // ⚠️ ton modèle doit avoir un champ "clientId"
+
+    if (!tasks || tasks.length === 0) {
+      return res.status(404).json({ message: "Aucune tâche trouvée pour ce client" });
+    }
+
+    res.status(200).json(tasks);
+  } catch (error) {
+    console.error("❌ Erreur getTasksByClientId:", error);
+    res.status(500).json({ message: "Erreur serveur", error: error.message });
   }
 };

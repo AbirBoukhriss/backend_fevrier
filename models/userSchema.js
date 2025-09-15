@@ -26,14 +26,23 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ["admin", "client", "freelancer"],
+    enum: ["client", "freelancer"],
   },
   messages: [{ type: mongoose.Schema.Types.ObjectId, ref: "Message" }],
   client: { type: mongoose.Schema.Types.ObjectId, ref: "Client" },
   freelance: { type: mongoose.Schema.Types.ObjectId, ref: "Freelance" },
-  user_image: { type: String, default: "uploads/client.png" },
+   user_image: {
+  type: String,
+  default: "/files/default.png" // optionnel, une image par défaut
+},
 
-  age: { type: Number },
+  phone: { type: Number },
+   address: {
+    type: String,
+  },
+
+ 
+ 
   count: { type: Number, default: 0 },
   etat: Boolean,
   ban: Boolean,

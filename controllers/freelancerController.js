@@ -122,3 +122,23 @@ exports.deleteFreelancer = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+//controllers/freelancerController.js
+// controllers/freelancerController.js
+exports.getFreelancerByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // ✅ On fait populate pour ramener les infos du user
+    const freelancer = await Freelancer.findOne({ userId: userId })
+      .populate("userId", "username email"); // chnowa theb tjib men user : esm + email
+
+    if (!freelancer) {
+      return res.status(404).json({ message: "Freelancer not found" });
+    }
+
+    res.json(freelancer);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
